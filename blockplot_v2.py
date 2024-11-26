@@ -52,16 +52,16 @@ def blockplot(
 	if double_mode:
 		T = np.vstack((np.copy(Y), np.copy(Y2)))
 		smaller = (T[0] > T[1]).astype(int)
-		bigger = (T[1] > T[0]).astype(int)
+		bigger = (T[1] >= T[0]).astype(int)
 	else:
 		T = np.copy(Y)
 
 	if perzero:
-		print("top")
+		#print("top")
 		for y in range(max(round(ymax), 0) - 1, -1, -1):
-			print(y)
+			#print(y)
 			#if double_mode:
-			#	print(T)
+			#	#print(T)
 
 			for x in range(X.size):
 				if double_mode:
@@ -92,7 +92,7 @@ def blockplot(
 
 					
 					"""
-					print(x, T[i, x], T[j, x], end = "; ")
+					#print(x, T[i, x], T[j, x], end = "; ")
 					if T[i, x] >= 1.:
 						blocks[y][x] = colors[i] + '\u2588' + color_clear
 						T[i, x] -= 1.
@@ -123,11 +123,11 @@ def blockplot(
 						blocks[y][x] = chars[int(8 * T[x])]
 						T[x] = float("NaN")
 			#if double_mode:
-			#	print(T)
-		print("bottom")
-		print(T)
+			#	#print(T)
+		#print("bottom")
+		#print(T)
 		for y in range(max(round(ymax), 0), len(blocks)):
-			print(y)
+			#print(y)
 			for x in range(X.size):
 				if double_mode:
 					i = bigger[x]
