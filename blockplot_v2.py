@@ -1,21 +1,42 @@
 import numpy as np
 
+# for bright, add 6 if ok
+colors_websafe = {
+	"violet": 55, # bright ok
+	"purple": 93, # bright ok
+	"pink": 201, # bright ok
+	"red": 196,
+	"maroon": 52,
+	"gold": 214,
+	"yellow": 226,
+	"green": 46,
+	"pine": 22, # bright ok
+	"cyan": 51,
+	"blue" : 21, # bright ok
+	"navy" : 17, # bright ok
+	"black": 232,
+	"gray": 239,
+	"white": 255
+}
+
 def blockplot(
-	Y : np.array, X : np.array, limits : bool = True, perzero : bool = False,
-	x_limits : tuple = None, Y2 : np.array = None
+	Y : np.array, X : np.array, Y2 : np.array = None, color1_name : str = "cyan", color2_name : str = "green",
+	limits : bool = True, perzero : bool = False, tick : bool = False, x_limits : tuple = None, y_limits : tuple = None
 ) -> str:
 	if Y.ndim != 1 or X.ndim != 1 or (Y2 is not None and Y2.ndim != 1):
 		return "Inputs are not one-dimensional"
 	elif Y.size != X.size or (Y2 is not None and Y2.size != X.size):
 		return "Inputs are not the same size"
+	elif color1_name not in colors_websafe.keys() or color2_name not in colors_websafe.keys():
+		return "Invalid color(s) specified"
 
 	if Y2 is not None:
 		double_mode = True
 	else:
 		double_mode = False
 
-	color1 = 21
-	color2 = 93
+	color1 = colors_websafe[color1_name]
+	color2 = colors_websafe[color2_name]
 
 	color1_prefix = "\x1B[38;5;{:d}m".format(color1)
 	color2_prefix = "\x1B[38;5;{:d}m".format(color2)
@@ -47,7 +68,6 @@ def blockplot(
 
 	blocks = [[' ' for x in range(X.size)] for y in range(round(yrange))]
 	chars = ' ' + ''.join([chr(c) for c in range(0x2581, 0x2588)])
-	#print(chars)heroes
 
 	if double_mode:
 		T = np.vstack((np.copy(Y), np.copy(Y2)))
