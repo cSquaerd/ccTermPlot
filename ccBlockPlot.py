@@ -44,6 +44,10 @@ parser_data.add_argument(
 		"or two numbers per line, separated by a comma;\nSpace & Tab separation also works instead of Lines"
 	)
 )
+parser_data.add_argument(
+	"-x", "--xlabels", action = "store_true",
+	help = "First column of data contains labels;\nWorks in single or double data modes"
+)
 
 parser_flags.add_argument(
 	"-l", "--limits", action = "store_true", help = "Write the axis limit values around the corners of the plot"
@@ -325,8 +329,19 @@ if __name__ == "__main__":
 			exit(1)
 
 		if ',' in lines[0]:
-			Y = np.array(list( map(lambda s : float(s.split(',')[0]), lines) ))
-			Y2 = np.array(list( map(lambda s : float(s.split(',')[1]), lines) ))
+			comma_count = lines[0].count(',')
+
+			x_labels = None
+			i1 = 0
+			i2 = 1
+			if argV.xlabels:
+				x_labels = list(map(lambda s : s.split(',')[0], lines))
+				i1 = 1
+				i2 = 2
+
+			Y = np.array(list( map(lambda s : float(s.split(',')[i1]), lines) ))
+			if comma_count == 1 and not argV.xlabels or comma_count == 2 and argV.xlabels:
+				Y2 = np.array(list( map(lambda s : float(s.split(',')[i2]), lines) ))
 		else:
 			Y = np.array(list( map(lambda s : float(s), lines) ))
 			Y2 = None
@@ -380,8 +395,9 @@ if __name__ == "__main__":
 			Y2 = (yscale * Y2)[:columns]
 
 	X = np.arange(Y.size)
-
 	x_limits = (argV.xmin, argV.xmax) if argV.xmin is not None and argV.xmax is not None else None
+	if argV.xlabels:
+		x_limits = (x_labels[0], x_labels[Y.size - 1])
 
 	print(
 		blockplot(
