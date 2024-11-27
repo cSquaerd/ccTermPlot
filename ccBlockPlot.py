@@ -60,7 +60,8 @@ parser_flags.add_argument(
 )
 
 parser_flags.add_argument(
-	"-a", "--adjust", "--scale", action = "store_true", help = "Scale the data to fit within your terminal automatically"
+	"-a", "--adjust", "--scale", action = "store_true",
+	help = "Transform the data to fit within your terminal automatically;\nY axis is scaled, X axis is truncated"
 )
 
 parser_color.add_argument("-c", "--nocolor", action = "store_true", help = "Disable all color in the plot\n\n")
@@ -163,7 +164,7 @@ def blockplot(
 		ymax = np.max(Y)
 
 	if perzero:
-		yrange = np.max(np.array([ymax - 0., ymax - ymin, 0 - ymin]))
+		yrange = np.max(np.array([ymax - 0., ymax - ymin, 0. - ymin]))
 	else:
 		yrange = ymax - ymin
 		Y -= ymin
@@ -283,7 +284,9 @@ def blockplot(
 
 		if tick:
 			height = len(blocks)
-			if perzero:
+			if y_limits_override:
+				ticks = np.linspace(y_limits[0], y_limits[1], height)
+			elif perzero:
 				ticks = np.linspace(min(ymin, 0.), max(ymax, 0.), height)
 			else:
 				ticks = np.linspace(ymin, ymax, height)
@@ -303,7 +306,7 @@ def blockplot(
 
 if __name__ == "__main__":
 	argV = parser.parse_args()
-	print(argV)
+	#print(argV)
 
 	if not argV.stdin and argV.file is None:
 		print("Error: No input method provided. Exiting...")
@@ -338,5 +341,52 @@ if __name__ == "__main__":
 		)
 		exit(2)
 
-	print(Y)
-	print(Y2)
+	#print(Y)
+	#print(Y2)
+
+	y_limits = None
+
+	if argV.adjust:
+		columns, lines = os.get_terminal_size()
+
+		if argV.limits: # Padding from tick labels
+			columns -= 8
+			lines -= 2 # one extra for the status line
+
+		if Y2 is None:
+			ymin = np.min(Y)
+			ymax = np.max(Y)
+		else:
+			ymin = min(np.min(Y), np.min(Y2))
+			ymax = max(np.max(Y), np.max(Y2))
+
+		y_limits = (ymin, ymax) # Computed before scaling
+
+		if argV.perzero:
+			yrange = max(np.array([ymax - 0., ymax - ymin, 0. - ymin]))
+		else:
+			yrange = ymax - ymin
+		
+		try:
+			yscale = lines / yrange
+		except ZeroDivisionError as ze:
+			print(
+				"Error: Range of Y values is zero, cannot scale data: "
+				"<Line {:s}: {:s}>".format(str(ze.__traceback__.tb_lineno), str(ze))
+			)
+
+		Y = (yscale * Y)[:columns]
+		if Y2 is not None:
+			Y2 = (yscale * Y2)[:columns]
+
+	X = np.arange(Y.size)
+
+	x_limits = (argV.xmin, argV.xmax) if argV.xmin is not None and argV.xmax is not None else None
+
+	print(
+		blockplot(
+			Y, X, Y2 = Y2, x_limits = x_limits, y_limits = y_limits,
+			limits = argV.limits, perzero = argV.perzero, tick = argV.tick, nocolor = argV.nocolor,
+			color1 = argV.color1, color2 = argV.color2
+		)
+	)
