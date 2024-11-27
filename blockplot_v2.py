@@ -112,120 +112,89 @@ def blockplot(
 	else:
 		T = np.copy(Y)
 
+	# Setting the two ranges depending on mode here allows for no code copying
 	if perzero:
-		#print("top")
-		for y in range(max(round(ymax), 0) - 1, -1, -1):
-			#print(y)
-			#if double_mode:
-			#	#print(T)
-
-			for x in range(X.size):
-				if double_mode:
-					i = smaller[x]
-					j = bigger[x]
-
-					if T[i, x] >= 1. and T[j, x] >= 1.:
-						blocks[y][x] = colors[i] + '\u2588' + color_clear
-						T[i, x] -= 1.
-						T[j, x] -= 1.
-					elif T[i, x] >= 0. and T[j, x] >= 0.625:
-						blocks[y][x] = color_changes[i] + chars[int(8 * T[i, x])] + color_clear
-						T[i, x] = float("NaN")
-						if T[j, x] >= 1.:
-							T[j, x] -= 1.
-						else:
-							T[j, x] = float("NaN")
-					elif T[i, x] >= 0.:
-						blocks[y][x] = colors[i] + chars[int(8 * T[i, x])] + color_clear
-						T[i, x] = float("NaN")
-						T[j, x] = float("NaN")
-					elif T[j, x] >= 1.:
-						blocks[y][x] = colors[j] + '\u2588' + color_clear
-						T[j, x] -= 1
-					elif T[j, x] >= 0:
-						blocks[y][x] = colors[j] + chars[int(8 * T[j, x])] + color_clear
-						T[j, x] = float("NaN")
-						
-				else:
-					if T[x] >= 1.:
-						blocks[y][x] = color1_prefix + '\u2588' + color_clear
-						T[x] -= 1.
-					elif T[x] >= 0.:
-						blocks[y][x] = color1_prefix + chars[int(8 * T[x])] + color_clear
-						T[x] = float("NaN")
-			#if double_mode:
-			#	#print(T)
-		#print("bottom")
-		#print(T)
-		for y in range(max(round(ymax), 0), len(blocks)):
-			#print(y)
-			for x in range(X.size):
-				if double_mode:
-					i = bigger[x]
-					j = smaller[x]
-
-					if T[i, x] <= -1. and T[j, x] <= -1.:
-						blocks[y][x] = colors[i] + '\u2588' + color_clear
-						T[i, x] += 1.
-						T[j, x] += 1.
-					elif T[i, x] <= 0. and T[j, x] <= -0.625:
-						blocks[y][x] = color_reverse + color_changes[i] + chars[7 + int(8 * T[i, x])] + color_clear
-						T[i, x] = float("NaN")
-						if T[j, x] <= -1.:
-							T[j, x] += 1.
-						else:
-							T[j, x] = float("NaN")
-					elif T[i, x] <= 0.:
-						blocks[y][x] = color_reverse + colors[i] + chars[7 + int(8 * T[i, x])] + color_clear
-						T[i, x] = float("NaN")
-						T[j, x] = float("NaN")
-					elif T[j, x] <= -1.:
-						blocks[y][x] = colors[j] + '\u2588' + color_clear
-						T[j, x] += 1
-					elif T[j, x] <= 0:
-						blocks[y][x] = color_reverse + colors[j] + chars[7 + int(8 * T[j, x])] + color_clear
-						T[j, x] = float("NaN")
-						
-				else:
-					if T[x] <= -1.:
-						blocks[y][x] = color1_prefix + '\u2588' + color_clear
-						T[x] += 1.
-					elif T[x] <= 0.:
-						blocks[y][x] = color_reverse + color1_prefix + chars[7 - int(8 * T[x] * -1)] + color_clear
-						T[x] = float("NaN")
+		range_top = range(max(round(ymax), 0) - 1, -1, -1)
 	else:
-		for y in range(len(blocks) - 1, -1, -1):
-			for x in range(X.size):
-				if double_mode:
-					i = smaller[x]
-					j = bigger[x]
-					
-					#print(x, T[i, x], T[j, x], end = "; ")
-					if T[i, x] >= 1.:
-						blocks[y][x] = colors[i] + '\u2588' + color_clear
-					elif T[i, x] >= 0.:
-						if T[j, x] >= 0.625:
-							change = color_changes[i]
-							blocks[y][x] = change + chars[int(8 * T[i, x])] + color_clear
-						else:
-							blocks[y][x] = colors[i] + chars[int(8 * T[i, x])] + color_clear
+		range_top = range(len(blocks) - 1, -1, -1)
+	
+	for y in range_top:
 
-						T[i, x] = float("NaN")
-					elif T[j, x] >= 1.:
-						blocks[y][x] = colors[j] + '\u2588' + color_clear
-					elif T[j, x] >= 0:
-						blocks[y][x] = colors[j] + chars[int(8 * T[j, x])] + color_clear
-						T[:, x] = float("NaN")
+		for x in range(X.size):
+			if double_mode:
+				i = smaller[x]
+				j = bigger[x]
+
+				if T[i, x] >= 1. and T[j, x] >= 1.: # smaller and bigger not at edge yet
+					blocks[y][x] = colors[i] + '\u2588' + color_clear
+					T[i, x] -= 1.
+					T[j, x] -= 1.
+				elif T[i, x] >= 0. and T[j, x] >= 0.625: # smaller at edge, bigger strictly above half, possibly not done
+					blocks[y][x] = color_changes[i] + chars[int(8 * T[i, x])] + color_clear
+					T[i, x] = float("NaN")
+					if T[j, x] >= 1.:
+						T[j, x] -= 1.
+					else:
+						T[j, x] = float("NaN")
+				elif T[i, x] >= 0.: # smaller and bigger at edges, bigger at half or below
+					blocks[y][x] = colors[i] + chars[int(8 * T[i, x])] + color_clear
+					T[i, x] = float("NaN")
+					T[j, x] = float("NaN")
+				elif T[j, x] >= 1.: # bigger not at edge yet
+					blocks[y][x] = colors[j] + '\u2588' + color_clear
+					T[j, x] -= 1
+				elif T[j, x] >= 0: # bigger at edge alone
+					blocks[y][x] = colors[j] + chars[int(8 * T[j, x])] + color_clear
+					T[j, x] = float("NaN")
 					
-					T[:, x] -= 1.
-						
-				else:
-					if T[x] >= 1.:
-						blocks[y][x] = color1_prefix + '\u2588' + color_clear
-						T[x] -= 1.
-					elif T[x] >= 0.:
-						blocks[y][x] = color1_prefix + chars[int(8 * T[x])] + color_clear
-						T[x] = float("NaN")
+			else:
+				if T[x] >= 1.:
+					blocks[y][x] = color1_prefix + '\u2588' + color_clear
+					T[x] -= 1.
+				elif T[x] >= 0.:
+					blocks[y][x] = color1_prefix + chars[int(8 * T[x])] + color_clear
+					T[x] = float("NaN")
+	
+	for y in range(max(round(ymax), 0), len(blocks)):
+		if not perzero:
+			continue # Skips the inner loop if we are not in perzero mode
+
+		for x in range(X.size):
+			if double_mode:
+				# Note since were on the negative side, bigger is more positive, smaller is more negative,
+				# hence smaller Is bigger ;)
+				i = bigger[x]
+				j = smaller[x]
+
+				if T[i, x] <= -1. and T[j, x] <= -1.: # smaller and bigger not at edge yet
+					blocks[y][x] = colors[i] + '\u2588' + color_clear
+					T[i, x] += 1.
+					T[j, x] += 1.
+				elif T[i, x] <= 0. and T[j, x] <= -0.625: # smaller at edge, bigger strictly below half, possibly not done
+					blocks[y][x] = color_reverse + color_changes[i] + chars[7 + int(8 * T[i, x])] + color_clear
+					T[i, x] = float("NaN")
+					if T[j, x] <= -1.:
+						T[j, x] += 1.
+					else:
+						T[j, x] = float("NaN")
+				elif T[i, x] <= 0.: # smaller and bigger at edges, bigger at half or above
+					blocks[y][x] = color_reverse + colors[i] + chars[7 + int(8 * T[i, x])] + color_clear
+					T[i, x] = float("NaN")
+					T[j, x] = float("NaN")
+				elif T[j, x] <= -1.: # bigger not at edge yet
+					blocks[y][x] = colors[j] + '\u2588' + color_clear
+					T[j, x] += 1
+				elif T[j, x] <= 0: # bigger at edge alone
+					blocks[y][x] = color_reverse + colors[j] + chars[7 + int(8 * T[j, x])] + color_clear
+					T[j, x] = float("NaN")
+					
+			else:
+				if T[x] <= -1.:
+					blocks[y][x] = color1_prefix + '\u2588' + color_clear
+					T[x] += 1.
+				elif T[x] <= 0.:
+					blocks[y][x] = color_reverse + color1_prefix + chars[7 - int(8 * T[x] * -1)] + color_clear
+					T[x] = float("NaN")
 	
 	if limits:
 		for i in range(round(yrange)):
