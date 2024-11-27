@@ -18,11 +18,25 @@ colors_websafe = {
 	"gray": 239,
 	"white": 255
 }
+colors_nobright = set(["maroon", "green", "yellow", "cyan", "white"])
 
 def blockplot(
-	Y : np.array, X : np.array, Y2 : np.array = None, color1_name : str = "cyan", color2_name : str = "green",
+	Y : np.array, X : np.array, Y2 : np.array = None, color1 : str = "cyan", color2 : str = "green",
 	limits : bool = True, perzero : bool = False, tick : bool = False, x_limits : tuple = None, y_limits : tuple = None
 ) -> str:
+
+	try:
+		color1_bright, color1_name = color1.split('_')
+	except ValueError:
+		color1_name = color1
+		color1_bright = ""
+
+	try:
+		color2_bright, color2_name = color2.split('_')
+	except ValueError:
+		color2_name = color2
+		color2_bright = ""
+
 	if Y.ndim != 1 or X.ndim != 1 or (Y2 is not None and Y2.ndim != 1):
 		return "Inputs are not one-dimensional"
 	elif Y.size != X.size or (Y2 is not None and Y2.size != X.size):
@@ -36,7 +50,11 @@ def blockplot(
 		double_mode = False
 
 	color1 = colors_websafe[color1_name]
+	if color1_bright == "bright" and color1_name not in colors_nobright:
+		color1 += 6
 	color2 = colors_websafe[color2_name]
+	if color2_bright == "bright" and color2_name not in colors_nobright:
+		color2 += 6
 
 	color1_prefix = "\x1B[38;5;{:d}m".format(color1)
 	color2_prefix = "\x1B[38;5;{:d}m".format(color2)
@@ -109,31 +127,6 @@ def blockplot(
 					elif T[j, x] >= 0:
 						blocks[y][x] = colors[j] + chars[int(8 * T[j, x])] + color_clear
 						T[j, x] = float("NaN")
-
-					
-					"""
-					#print(x, T[i, x], T[j, x], end = "; ")
-					if T[i, x] >= 1.:
-						blocks[y][x] = colors[i] + '\u2588' + color_clear
-						T[i, x] -= 1.
-					elif T[i, x] >= 0.:
-						if T[j, x] >= 0.625:
-							change = color_changes[i]
-							blocks[y][x] = change + chars[int(8 * T[i, x])] + color_clear
-						else:
-							blocks[y][x] = colors[i] + chars[int(8 * T[i, x])] + color_clear
-
-						T[i, x] = float("NaN")
-					
-					elif T[j, x] >= 1.:
-						blocks[y][x] = colors[j] + '\u2588' + color_clear
-						T[j, x] -= 1.
-					elif T[j, x] >= 0:
-						blocks[y][x] = colors[j] + chars[int(8 * T[j, x])] + color_clear
-						T[j, x] = float("NaN")
-					
-					#T[:, x] -= 1.
-					"""
 						
 				else:
 					if T[x] >= 1.:
@@ -220,12 +213,28 @@ def blockplot(
 		for i in range(round(yrange)):
 			blocks[i].insert(0, "        ")
 
-		if perzero:
+		y_limits_override = False
+		if y_limits is not None and len(y_limits) == 2:
+			blocks[0][0] = "{: ^7.2F} ".format(y_limits[0])
+			blocks[-1][0] = "{: ^7.2F} ".format(y_limits[1])
+			y_limits_override = True
+		elif perzero and not tick:
 			blocks[0][0] = "{: ^7.2F} ".format(max(ymax, 0.))
 			blocks[-1][0] = "{: ^7.2F} ".format(min(ymin, 0.))
-		else:
+		elif not tick:
 			blocks[0][0] = "{: ^7.2F} ".format(ymax)
 			blocks[-1][0] = "{: ^7.2F} ".format(ymin)
+
+		if tick:
+			height = len(blocks)
+			if perzero:
+				ticks = np.linspace(min(ymin, 0.), max(ymax, 0.), height)
+			else:
+				ticks = np.linspace(ymin, ymax, height)
+
+			start, end = (2, height - 2) if y_limits_override else (0, height)
+			for i in range(start, end, 2):
+				blocks[i][0] =  "{: ^7.2F} ".format(ticks[height - 1 - i])
 		
 		blocks.append(
 			["        ", "{: <7.2F} ".format(np.min(X)), ' ' * max(X.size - 16, 0), " {: >7.2F}".format(np.max(X))]
