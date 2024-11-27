@@ -272,8 +272,8 @@ def blockplot(
 
 		y_limits_override = False
 		if y_limits is not None and len(y_limits) == 2:
-			blocks[0][0] = "{: ^7.2F} ".format(y_limits[0])
-			blocks[-1][0] = "{: ^7.2F} ".format(y_limits[1])
+			blocks[0][0] = "{: ^7.2F} ".format(y_limits[1])
+			blocks[-1][0] = "{: ^7.2F} ".format(y_limits[0])
 			y_limits_override = True
 		elif perzero and not tick:
 			blocks[0][0] = "{: ^7.2F} ".format(max(ymax, 0.))
@@ -360,11 +360,11 @@ if __name__ == "__main__":
 			ymin = min(np.min(Y), np.min(Y2))
 			ymax = max(np.max(Y), np.max(Y2))
 
-		y_limits = (ymin, ymax) # Computed before scaling
-
 		if argV.perzero:
+			y_limits = (min(ymin, 0.), max(ymax, 0.)) # Computed before scaling
 			yrange = max(np.array([ymax - 0., ymax - ymin, 0. - ymin]))
 		else:
+			y_limits = (ymin, ymax) # Computed before scaling
 			yrange = ymax - ymin
 		
 		try:
