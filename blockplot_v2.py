@@ -1,3 +1,6 @@
+import os, sys
+import argparse
+import subprocess
 import numpy as np
 
 # for bright, add 6 if ok
@@ -5,25 +8,32 @@ colors_websafe = {
 	"violet": 55, # bright ok
 	"purple": 93, # bright ok
 	"pink": 201, # bright ok
-	"red": 196,
+	"red": 196, # bright ok
 	"maroon": 52,
-	"gold": 214,
+	"gold": 214, # bright ok
 	"yellow": 226,
 	"green": 46,
 	"pine": 22, # bright ok
 	"cyan": 51,
 	"blue" : 21, # bright ok
 	"navy" : 17, # bright ok
-	"black": 232,
-	"gray": 239,
+	"black": 232, # bright ok
+	"gray": 239, # bright ok
 	"white": 255
 }
 colors_nobright = set(["maroon", "green", "yellow", "cyan", "white"])
 
 def blockplot(
-	Y : np.array, X : np.array, Y2 : np.array = None, color1 : str = "cyan", color2 : str = "green",
-	limits : bool = True, perzero : bool = False, tick : bool = False, x_limits : tuple = None, y_limits : tuple = None
+	Y : np.array, X : np.array, Y2 : np.array = None, color1 : str = "bright_gold", color2 : str = "bright_pine",
+	limits : bool = True, perzero : bool = False, tick : bool = False, nocolor : bool = False,
+	x_limits : tuple = None, y_limits : tuple = None
 ) -> str:
+	"""
+	Given a list of X values and one or two equally-sized lists of Y values,
+	produce a bar plot of the data; Optionally, color the data,
+	add scale tick labels on both axes, override said labels,
+	and/or draw the data originating from the X axis (Y = 0)
+	"""
 
 	try:
 		color1_bright, color1_name = color1.split('_')
@@ -58,10 +68,18 @@ def blockplot(
 
 	color1_prefix = "\x1B[38;5;{:d}m".format(color1)
 	color2_prefix = "\x1B[38;5;{:d}m".format(color2)
+	if nocolor:
+		color1_prefix = ""
+		color2_prefix = ""
+	
 	colors = (color1_prefix, color2_prefix)
 	
 	color1_to_2 = "\x1B[38;5;{:d};48;5;{:d}m".format(color1, color2)
 	color2_to_1 = "\x1B[38;5;{:d};48;5;{:d}m".format(color2, color1)
+	if nocolor:
+		color1_to_2 = ""
+		color2_to_1 = ""
+	
 	color_changes = (color1_to_2, color2_to_1) # index with smaller
 	
 	color_clear = "\x1B[0m"
@@ -130,10 +148,10 @@ def blockplot(
 						
 				else:
 					if T[x] >= 1.:
-						blocks[y][x] = '\u2588'
+						blocks[y][x] = color1_prefix + '\u2588' + color_clear
 						T[x] -= 1.
 					elif T[x] >= 0.:
-						blocks[y][x] = chars[int(8 * T[x])]
+						blocks[y][x] = color1_prefix + chars[int(8 * T[x])] + color_clear
 						T[x] = float("NaN")
 			#if double_mode:
 			#	#print(T)
@@ -170,10 +188,10 @@ def blockplot(
 						
 				else:
 					if T[x] <= -1.:
-						blocks[y][x] = '\u2588'
+						blocks[y][x] = color1_prefix + '\u2588' + color_clear
 						T[x] += 1.
 					elif T[x] <= 0.:
-						blocks[y][x] = color_reverse + chars[7 - int(8 * T[x] * -1)] + color_clear
+						blocks[y][x] = color_reverse + color1_prefix + chars[7 - int(8 * T[x] * -1)] + color_clear
 						T[x] = float("NaN")
 	else:
 		for y in range(len(blocks) - 1, -1, -1):
@@ -203,15 +221,15 @@ def blockplot(
 						
 				else:
 					if T[x] >= 1.:
-						blocks[y][x] = '\u2588'
+						blocks[y][x] = color1_prefix + '\u2588' + color_clear
 						T[x] -= 1.
 					elif T[x] >= 0.:
-						blocks[y][x] = chars[int(8 * T[x])]
+						blocks[y][x] = color1_prefix + chars[int(8 * T[x])] + color_clear
 						T[x] = float("NaN")
 	
 	if limits:
 		for i in range(round(yrange)):
-			blocks[i].insert(0, "        ")
+			blocks[i].insert(0, ' ' * 8)
 
 		y_limits_override = False
 		if y_limits is not None and len(y_limits) == 2:
@@ -237,7 +255,7 @@ def blockplot(
 				blocks[i][0] =  "{: ^7.2F} ".format(ticks[height - 1 - i])
 		
 		blocks.append(
-			["        ", "{: <7.2F} ".format(np.min(X)), ' ' * max(X.size - 16, 0), " {: >7.2F}".format(np.max(X))]
+			[' ' * 8, "{: <7.2F} ".format(np.min(X)), ' ' * max(X.size - 16, 0), " {: >7.2F}".format(np.max(X))]
 		)
 		if x_limits is not None and len(x_limits) == 2:
 			blocks[-1][1] = "{: <8s}".format(x_limits[0][:8])
