@@ -95,7 +95,7 @@ parser_color.add_argument(
 parser_label.add_argument("-x0", "--xmin", action = "store", metavar = "Minimum", help = "Minimum/Lefthand X axis label")
 parser_label.add_argument(
 	"-xn", "--xmax", action = "store", metavar = "Maximum",
-	help = "Maximum/Righthand X axis label\n\nLabels are strings of at most eight characters;\nNo effect without --limits"
+	help = "Maximum/Righthand X axis label\n\nLabels are strings of at most twelve characters;\nNo effect without --limits"
 )
 
 def blockplot(
@@ -300,11 +300,11 @@ def blockplot(
 				blocks[i][0] =  "{: ^7.2F} ".format(ticks[height - 1 - i])
 		
 		blocks.append(
-			[' ' * 8, "{: <7.2F} ".format(np.min(X)), ' ' * max(X.size - 16, 0), " {: >7.2F}".format(np.max(X))]
+			[' ' * 8, "{: <11.2F} ".format(np.min(X)), ' ' * max(X.size - 24, 0), " {: >11.2F}".format(np.max(X))]
 		)
 		if x_limits is not None and len(x_limits) == 2:
-			blocks[-1][1] = "{: <8s}".format(x_limits[0][:8])
-			blocks[-1][3] = "{: >8s}".format(x_limits[1][:8])
+			blocks[-1][1] = "{: <12s}".format(x_limits[0][:12])
+			blocks[-1][3] = "{: >12s}".format(x_limits[1][:12])
 	
 	return '\n'.join([''.join([char for char in line]) for line in blocks])
 
