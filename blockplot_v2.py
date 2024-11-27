@@ -22,10 +22,62 @@ colors_websafe = {
 	"white": 255
 }
 colors_nobright = set(["maroon", "green", "yellow", "cyan", "white"])
+all_color_names = list(colors_websafe.keys()) + \
+	list(map(lambda k : "bright_" + k, [k for k in colors_websafe.keys() if k not in colors_nobright]))
+
+parser = argparse.ArgumentParser(
+	description = "A bar plotter for up to two data streams", formatter_class = argparse.RawTextHelpFormatter
+)
+parser.add_argument("-s", "--stdin", action = "store_true", help = "Read the data from stdin")
+
+parser.add_argument(
+	"-f", "--file", action = "store", metavar = "InputFile",
+	help = (
+		"Read the data from a file\n\nThe data should be either one number per line,\n"
+		"or two numbers per line, separated by a comma\n\n"
+	)
+)
+
+parser.add_argument(
+	"-l", "--limits", action = "store_true", help = "Write the axis limit values around the corners of the plot"
+)
+
+parser.add_argument(
+	"-z", "--perzero", action = "store_true",
+	help = "Draw the plot relative to the zero of the Y axis;\nPositive parts go up, negative parts go down"
+)
+
+parser.add_argument(
+	"-t", "--tick", action = "store_true", help = "Write tick values at every other text line along the Y axis"
+)
+
+parser.add_argument("-c", "--nocolor", action = "store_true", help = "Disable all color in the plot\n\n")
+
+parser.add_argument(
+	"-c1", "--color1", action = "store", metavar = "PrimaryColor", default = "bright_gold",
+	help = "Set the primary color of the bars, defaults to bright_gold"
+)
+colors_per_line = 5
+parser.add_argument(
+	"-c2", "--color2", action = "store", metavar = "AuxiliaryColor", default = "bright_pine",
+	help = (
+		"Set the auxiliary color (for Y2) of the bars, defaults to bright_pine\n\n"
+		"Colors to choose from are:\n  * {:s}"
+	).format(
+		"\n  * ".join(
+			[
+				", ".join(
+					k for k in all_color_names[colors_per_line * i:colors_per_line * i + colors_per_line]
+				)
+				for i in range(int(np.ceil(len(all_color_names) / colors_per_line)))
+			]
+		)
+	)
+)
 
 def blockplot(
 	Y : np.array, X : np.array, Y2 : np.array = None, color1 : str = "bright_gold", color2 : str = "bright_pine",
-	limits : bool = True, perzero : bool = False, tick : bool = False, nocolor : bool = False,
+	limits : bool = False, perzero : bool = False, tick : bool = False, nocolor : bool = False,
 	x_limits : tuple = None, y_limits : tuple = None
 ) -> str:
 	"""
@@ -119,7 +171,6 @@ def blockplot(
 		range_top = range(len(blocks) - 1, -1, -1)
 	
 	for y in range_top:
-
 		for x in range(X.size):
 			if double_mode:
 				i = smaller[x]
@@ -231,4 +282,7 @@ def blockplot(
 			blocks[-1][3] = "{: >8s}".format(x_limits[1][:8])
 	
 	return '\n'.join([''.join([char for char in line]) for line in blocks])
+
+if __name__ == "__main__":
+	parser.parse_args()
 
