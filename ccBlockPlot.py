@@ -1,3 +1,5 @@
+#!/bin/python3
+
 import os, sys
 import argparse
 import subprocess
@@ -28,7 +30,7 @@ all_color_names = list(colors_websafe.keys()) + \
 parser = argparse.ArgumentParser(
 	description = "A bar plotter for up to two data streams", formatter_class = argparse.RawTextHelpFormatter
 )
-parser.add_argument("-s", "--stdin", action = "store_true", help = "Read the data from stdin")
+parser.add_argument("-s", "--stdin", action = "store_true", help = "Read the data from stdin; Ideal for piping")
 
 parser.add_argument(
 	"-f", "--file", action = "store", metavar = "InputFile",
@@ -48,7 +50,8 @@ parser.add_argument(
 )
 
 parser.add_argument(
-	"-t", "--tick", action = "store_true", help = "Write tick values at every other text line along the Y axis"
+	"-t", "--tick", action = "store_true",
+	help = "Write tick values at every other text line along the Y axis;\nNo effect without --limits"
 )
 
 parser.add_argument("-c", "--nocolor", action = "store_true", help = "Disable all color in the plot\n\n")
@@ -62,7 +65,7 @@ parser.add_argument(
 	"-c2", "--color2", action = "store", metavar = "AuxiliaryColor", default = "bright_pine",
 	help = (
 		"Set the auxiliary color (for Y2) of the bars, defaults to bright_pine\n\n"
-		"Colors to choose from are:\n  * {:s}"
+		"Colors to choose from are:\n  * {:s}\n\n"
 	).format(
 		"\n  * ".join(
 			[
@@ -73,6 +76,12 @@ parser.add_argument(
 			]
 		)
 	)
+)
+
+parser.add_argument("-x0", "--xmin", action = "store", metavar = "Minimum", help = "Minimum/Lefthand X axis label")
+parser.add_argument(
+	"-xn", "--xmax", action = "store", metavar = "Maximum",
+	help = "Maximum/Righthand X axis label\n\nLabels are strings of at most eight characters;\nNo effect without --limits\n\n"
 )
 
 def blockplot(
@@ -284,5 +293,41 @@ def blockplot(
 	return '\n'.join([''.join([char for char in line]) for line in blocks])
 
 if __name__ == "__main__":
-	parser.parse_args()
+	argV = parser.parse_args()
+	print(argV)
 
+	if not argV.stdin and argV.file is None:
+		print("Error: No input method provided. Exiting...")
+		exit(1)
+	
+	if argV.stdin:
+		raw = sys.stdin.read()
+	else:
+		with open(argV.file, 'r') as f:
+			raw = f.read()
+
+	try:
+		lines = [s for s in raw.split() if len(s) > 0]
+		if len(lines) == 0:
+			print("Error: No lines found on stdin. Exiting...")
+			exit(1)
+
+		if ',' in lines[0]:
+			Y = np.array(list( map(lambda s : float(s.split(',')[0]), lines) ))
+			Y2 = np.array(list( map(lambda s : float(s.split(',')[1]), lines) ))
+		else:
+			Y = np.array(list( map(lambda s : float(s), lines) ))
+			Y2 = None
+
+	except ValueError as ve:
+		print("Error: Could not parse data: <Line {:s}: {:s}>".format(str(ve.__traceback__.tb_lineno), str(ve)))
+		exit(2)
+	except IndexError as ie:
+		print(
+			"Error: Found line with single value in double data mode: "
+			"<Line {:s}: {:s}>".format(str(ie.__traceback__.tb_lineno), str(ie))
+		)
+		exit(2)
+
+	print(Y)
+	print(Y2)
