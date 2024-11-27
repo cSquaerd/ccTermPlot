@@ -30,42 +30,51 @@ all_color_names = list(colors_websafe.keys()) + \
 parser = argparse.ArgumentParser(
 	description = "A bar plotter for up to two data streams", formatter_class = argparse.RawTextHelpFormatter
 )
-parser.add_argument("-s", "--stdin", action = "store_true", help = "Read the data from stdin; Ideal for piping")
+parser_data = parser.add_argument_group("Data", "Arguments for handling data input")
+parser_flags = parser.add_argument_group("Flags", "Boolean Arguments for specific adjustments to the plot")
+parser_color = parser.add_argument_group("Color", "Arguments for adjusting color(s) in the plot")
+parser_label = parser.add_argument_group("Label", "Arguments for adjusting labels around the plot")
 
-parser.add_argument(
+parser_data.add_argument("-s", "--stdin", action = "store_true", help = "Read the data from stdin; Ideal for piping")
+
+parser_data.add_argument(
 	"-f", "--file", action = "store", metavar = "InputFile",
 	help = (
 		"Read the data from a file\n\nThe data should be either one number per line,\n"
-		"or two numbers per line, separated by a comma\n\n"
+		"or two numbers per line, separated by a comma;\nSpace & Tab separation also works instead of Lines"
 	)
 )
 
-parser.add_argument(
+parser_flags.add_argument(
 	"-l", "--limits", action = "store_true", help = "Write the axis limit values around the corners of the plot"
 )
 
-parser.add_argument(
+parser_flags.add_argument(
 	"-z", "--perzero", action = "store_true",
 	help = "Draw the plot relative to the zero of the Y axis;\nPositive parts go up, negative parts go down"
 )
 
-parser.add_argument(
+parser_flags.add_argument(
 	"-t", "--tick", action = "store_true",
 	help = "Write tick values at every other text line along the Y axis;\nNo effect without --limits"
 )
 
-parser.add_argument("-c", "--nocolor", action = "store_true", help = "Disable all color in the plot\n\n")
+parser_flags.add_argument(
+	"-a", "--adjust", "--scale", action = "store_true", help = "Scale the data to fit within your terminal automatically"
+)
 
-parser.add_argument(
+parser_color.add_argument("-c", "--nocolor", action = "store_true", help = "Disable all color in the plot\n\n")
+
+colors_per_line = 5
+parser_color.add_argument(
 	"-c1", "--color1", action = "store", metavar = "PrimaryColor", default = "bright_gold",
 	help = "Set the primary color of the bars, defaults to bright_gold"
 )
-colors_per_line = 5
-parser.add_argument(
+parser_color.add_argument(
 	"-c2", "--color2", action = "store", metavar = "AuxiliaryColor", default = "bright_pine",
 	help = (
 		"Set the auxiliary color (for Y2) of the bars, defaults to bright_pine\n\n"
-		"Colors to choose from are:\n  * {:s}\n\n"
+		"Colors to choose from are:\n  * {:s}"
 	).format(
 		"\n  * ".join(
 			[
@@ -78,10 +87,10 @@ parser.add_argument(
 	)
 )
 
-parser.add_argument("-x0", "--xmin", action = "store", metavar = "Minimum", help = "Minimum/Lefthand X axis label")
-parser.add_argument(
+parser_label.add_argument("-x0", "--xmin", action = "store", metavar = "Minimum", help = "Minimum/Lefthand X axis label")
+parser_label.add_argument(
 	"-xn", "--xmax", action = "store", metavar = "Maximum",
-	help = "Maximum/Righthand X axis label\n\nLabels are strings of at most eight characters;\nNo effect without --limits\n\n"
+	help = "Maximum/Righthand X axis label\n\nLabels are strings of at most eight characters;\nNo effect without --limits"
 )
 
 def blockplot(
