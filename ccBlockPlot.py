@@ -49,6 +49,16 @@ parser_data.add_argument(
 	help = "First column of data contains labels;\nWorks in single or double data modes"
 )
 
+parser_data.add_argument(
+	"-y0", "--ymin", action = "store", type = float, default = None, metavar = "YMin",
+	help = "Y value that should be at the bottom of the plot;\nNo effect without --adjust"
+)
+
+parser_data.add_argument(
+	"-yn", "--ymax", action = "store", type = float, default = None, metavar = "YMax",
+	help = "Y value that should be at the top of the plot;\nNo effect without --adjust"
+)
+
 parser_flags.add_argument(
 	"-l", "--limits", action = "store_true", help = "Write the axis limit values around the corners of the plot"
 )
@@ -101,7 +111,7 @@ parser_label.add_argument(
 def blockplot(
 	Y : np.array, X : np.array, Y2 : np.array = None, color1 : str = "bright_gold", color2 : str = "bright_pine",
 	limits : bool = False, perzero : bool = False, tick : bool = False, nocolor : bool = False,
-	x_limits : tuple = None, y_limits : tuple = None
+	x_limits : tuple = None, y_limits : tuple = None, y_extrema : tuple = None
 ) -> str:
 	"""
 	Given a list of X values and one or two equally-sized lists of Y values,
@@ -160,7 +170,9 @@ def blockplot(
 	color_clear = "\x1B[0m"
 	color_reverse = "\x1B[7m"
 
-	if double_mode:
+	if y_extrema is not None:
+		ymin, ymax = y_extrema
+	elif double_mode:
 		ymin = min(np.min(Y), np.min(Y2))
 		ymax = max(np.max(Y), np.max(Y2))
 	else:
@@ -171,7 +183,7 @@ def blockplot(
 		yrange = np.max(np.array([ymax - 0., ymax - ymin, 0. - ymin]))
 	else:
 		yrange = ymax - ymin
-		Y -= ymin
+		Y -= ymin # Move these subtracrtions onto T
 		if double_mode:
 			Y2 -= ymin
 
@@ -360,6 +372,7 @@ if __name__ == "__main__":
 	#print(Y2)
 
 	y_limits = None
+	y_extrema = None
 
 	if argV.adjust:
 		columns, lines = os.get_terminal_size()
@@ -375,13 +388,25 @@ if __name__ == "__main__":
 			ymin = min(np.min(Y), np.min(Y2))
 			ymax = max(np.max(Y), np.max(Y2))
 
+		y_extrema_override = False
+
+		if argV.ymin is not None:
+			#Y += (ymin - argV.ymin)
+			#if Y2 is not None:
+			#	Y2 += (ymin - argV.ymin)
+			ymin = argV.ymin
+			y_extrema_override = True
+		if argV.ymax is not None:
+			ymax = argV.ymax
+			y_extrema_override = True
+
 		if argV.perzero:
 			y_limits = (min(ymin, 0.), max(ymax, 0.)) # Computed before scaling
 			yrange = max(np.array([ymax - 0., ymax - ymin, 0. - ymin]))
 		else:
 			y_limits = (ymin, ymax) # Computed before scaling
 			yrange = ymax - ymin
-		
+	
 		try:
 			yscale = lines / yrange
 		except ZeroDivisionError as ze:
@@ -389,6 +414,9 @@ if __name__ == "__main__":
 				"Error: Range of Y values is zero, cannot scale data: "
 				"<Line {:s}: {:s}>".format(str(ze.__traceback__.tb_lineno), str(ze))
 			)
+		
+		if y_extrema_override:
+			y_extrema = (ymin * yscale, ymax * yscale)
 
 		Y = (yscale * Y)[:columns]
 		if Y2 is not None:
@@ -403,6 +431,6 @@ if __name__ == "__main__":
 		blockplot(
 			Y, X, Y2 = Y2, x_limits = x_limits, y_limits = y_limits,
 			limits = argV.limits, perzero = argV.perzero, tick = argV.tick, nocolor = argV.nocolor,
-			color1 = argV.color1, color2 = argV.color2
+			color1 = argV.color1, color2 = argV.color2, y_extrema = y_extrema
 		)
 	)

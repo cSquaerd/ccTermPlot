@@ -2,13 +2,14 @@
 LOGFILE=/tmp/temperature.log
 CPUGREP="Tctl"
 GPUGREP="edge"
-DELAY="0.5"
+DELAY="2"
 CURSORRESET="\033[1;1H"
 CURSORNOBLINK="\033[?25l"
 CURSORNORMAL="\033[?25h"
 
 echo -n "" > ${LOGFILE}
 echo -en ${CURSORNOBLINK}
+TD=${DELAY}
 
 while : ; do
 	(
@@ -20,12 +21,21 @@ while : ; do
 	if (( LINECOUNT > 8 )); then
 		#clear
 		echo -en ${CURSORRESET}
-		tail -n $(( COLUMNS - 8 )) ${LOGFILE} | ./ccBlockPlot.py -saltzx -c1 bright_blue -c2 navy
+
+		T0=$(date "+%s.%3N")
+		tail -n $(( COLUMNS - 8 )) ${LOGFILE} | ./ccBlockPlot.py -saltx -c1 bright_blue -c2 navy -y0 30 -yn 90
+		T1=$(date "+%s.%3N")
+
+		TD=$(echo "${DELAY} - (${T1} - ${T0})" | bc)
+		if (( $(echo "${TD} < 0" | bc) )); then
+			TD=${DELAY}
+		fi
+		#echo ${TD}
 	else
-		echo "Gathering data... $(( 8 - LINECOUNT )) lines to go."
+		echo "Gathering data... $(( 8 - LINECOUNT + 1 )) lines to go."
 	fi
 
-	read -sn 1 -t ${DELAY} KEY
+	read -sn 1 -t ${TD} KEY
 	if (( ${#KEY} )); then
 		break
 	fi
