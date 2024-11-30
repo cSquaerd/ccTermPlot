@@ -30,6 +30,9 @@ all_color_names = list(colors_websafe.keys()) + \
 parser = argparse.ArgumentParser(
 	description = "A bar plotter for up to two data streams", formatter_class = argparse.RawTextHelpFormatter
 )
+
+parser.add_argument("-C", "--charliesway", action = "store_true", help = "Shortcut for the flags -saltg (see below)")
+
 parser_data = parser.add_argument_group("Data", "Arguments for handling data input")
 parser_flags = parser.add_argument_group("Flags", "Boolean Arguments for specific adjustments to the plot")
 parser_color = parser.add_argument_group("Color", "Arguments for adjusting color(s) in the plot")
@@ -60,7 +63,7 @@ parser_data.add_argument(
 )
 
 parser_flags.add_argument(
-	"-l", "--limits", action = "store_true", help = "Write the axis limit values around the corners of the plot"
+	"-l", "--limits", action = "store_true", help = "Write the axis limit values around\nthe corners of the plot"
 )
 
 parser_flags.add_argument(
@@ -70,12 +73,16 @@ parser_flags.add_argument(
 
 parser_flags.add_argument(
 	"-t", "--tick", action = "store_true",
-	help = "Write tick values at every other text line along the Y axis;\nNo effect without --limits"
+	help = "Write tick values at every other text line\nalong the Y axis; No effect without --limits"
 )
 
 parser_flags.add_argument(
 	"-a", "--adjust", "--scale", action = "store_true",
-	help = "Transform the data to fit within your terminal automatically;\nY axis is scaled, X axis is truncated"
+	help = "Transform the data to fit within your terminal\nautomatically; Y axis is scaled, X axis is truncated"
+)
+
+parser_flags.add_argument(
+	"-g", "--grid", action = "store_true", help = "Draw a grid behind the data, defaults to 3 wide, 2 high"
 )
 
 parser_color.add_argument("-c", "--nocolor", action = "store_true", help = "Disable all color in the plot\n\n")
@@ -83,15 +90,15 @@ parser_color.add_argument("-c", "--nocolor", action = "store_true", help = "Disa
 colors_per_line = 5
 parser_color.add_argument(
 	"-c1", "--color1", action = "store", metavar = "PrimaryColor", default = "bright_gold",
-	help = "Set the primary color of the bars, defaults to bright_gold"
+	help = "Set the primary color of the bars,\ndefaults to bright_gold"
 )
 parser_color.add_argument(
 	"-c2", "--color2", action = "store", metavar = "AuxiliaryColor", default = "bright_pine",
 	help = (
-		"Set the auxiliary color (for Y2) of the bars, defaults to bright_pine\n\n"
-		"Colors to choose from are:\n  * {:s}"
+		"Set the auxiliary color (for Y2) of the bars,\ndefaults to bright_pine\n\n"
+		"Colors to choose from are:\n* {:s}"
 	).format(
-		"\n  * ".join(
+		"\n* ".join(
 			[
 				", ".join(
 					k for k in all_color_names[colors_per_line * i:colors_per_line * i + colors_per_line]
@@ -107,16 +114,23 @@ parser_label.add_argument(
 	"-xn", "--xmax", action = "store", metavar = "Maximum",
 	help = "Maximum/Righthand X axis label\n\nLabels are strings of at most twelve characters;\nNo effect without --limits"
 )
+parser_label.add_argument(
+	"-gw", "--gridwidth", action = "store", metavar = "Width", type = int, default = 3,
+	help = "Width of the background grid"
+)
+parser_label.add_argument(
+	"-gh", "--gridheight", action = "store", metavar = "Height", type = int, default = 2,
+	help = "Height of the background grid"
+)
 
 def blockplot(
 	Y : np.array, X : np.array, Y2 : np.array = None, color1 : str = "bright_gold", color2 : str = "bright_pine",
-	limits : bool = False, perzero : bool = False, tick : bool = False, nocolor : bool = False,
-	x_limits : tuple = None, y_limits : tuple = None, y_extrema : tuple = None
+	limits : bool = False, perzero : bool = False, tick : bool = False, nocolor : bool = False, grid : bool = False,
+	x_limits : tuple = None, y_limits : tuple = None, y_extrema : tuple = None, grid_dims : tuple = (3, 2)
 ) -> str:
 	"""
-	Given a list of X values and one or two equally-sized lists of Y values,
-	produce a bar plot of the data; Optionally, color the data,
-	add scale tick labels on both axes, override said labels,
+	Given a list of X values and one or two equally-sized lists of Y values, produce a bar plot of the data;
+	Optionally, color the data, add scale tick labels on both axes, override said labels, draw a background grid,
 	and/or draw the data originating from the X axis (Y = 0)
 	"""
 
@@ -189,7 +203,20 @@ def blockplot(
 
 	assert np.round(yrange, 3) != 0.
 
-	blocks = [[' ' for x in range(X.size)] for y in range(round(yrange))]
+	if grid:
+		w = grid_dims[0]
+		h = grid_dims[1]
+
+		background = lambda x, y: (
+			' ' if x % w != w - 1 and y % h != h - 1 else
+			'-' if x % w != w - 1 else
+			'|' if y % h != h - 1 else
+			'+'
+		)
+	else:
+		background = lambda x, y : ' '
+
+	blocks = [[background(x, y) for x in range(X.size)] for y in range(round(yrange))]
 	chars = ' ' + ''.join([chr(c) for c in range(0x2581, 0x2588)])
 
 	if double_mode:
@@ -324,6 +351,13 @@ if __name__ == "__main__":
 	argV = parser.parse_args()
 	#print(argV)
 
+	if argV.charliesway:
+		argV.stdin = True
+		argV.adjust = True
+		argV.limits = True
+		argV.tick = True
+		argV.grid = True
+
 	if not argV.stdin and argV.file is None:
 		print("Error: No input method provided. Exiting...")
 		exit(1)
@@ -430,7 +464,7 @@ if __name__ == "__main__":
 	print(
 		blockplot(
 			Y, X, Y2 = Y2, x_limits = x_limits, y_limits = y_limits,
-			limits = argV.limits, perzero = argV.perzero, tick = argV.tick, nocolor = argV.nocolor,
-			color1 = argV.color1, color2 = argV.color2, y_extrema = y_extrema
+			limits = argV.limits, perzero = argV.perzero, tick = argV.tick, nocolor = argV.nocolor, grid = argV.grid,
+			color1 = argV.color1, color2 = argV.color2, y_extrema = y_extrema, grid_dims = (argV.gridwidth, argV.gridheight)
 		)
 	)
