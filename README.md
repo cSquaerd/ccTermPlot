@@ -21,7 +21,7 @@ print(
 
 ## Within Shell
 ```Bash
-seq -3.14 0.1 3.14 | awk '{print sin($1)}' | ./ccBlockPlot.py -Ccz -x0 -3.14 -xn 3.14
+seq -3.14 0.1 3.14 | awk '{printf "%f,%f\n", sin($1), -0.5 * sin(2 * $1)}' | ./ccBlockPlot.py -Cz -x0 -3.14 -xn 3.14
 ```
 
 ![](pics/preview_shell.png)
